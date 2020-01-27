@@ -1,0 +1,149 @@
+
+package solver;
+import java.io.*;
+import java.util.*;
+public class Main {
+    public static void main(String[] args)throws IOException{
+        File input=new File(args[1]);
+        File output=new File(args[3]);
+        FileWriter fwr= new FileWriter(output); //  Writer
+        Scanner ob=new Scanner(input); // Reader
+ 
+        int n=ob.nextInt();
+        double a[][]=new double[n][n];
+        double b[]=new double[n];
+        for(int i=0;i<n;i++)
+        {
+            for(int j=0;j<n;j++)
+                a[i][j]=ob.nextDouble();
+            b[i]=ob.nextDouble();
+        }
+ 
+        // Performing Gauss_Jordan Elimination Method.
+        LinearEquation solve = new LinearEquation(n);
+        solve.initializeMatrixAndRows(a,b);
+        solve.calculate();
+        for(int i=0;i<n;i++)
+            fwr.write(solve.system.augmentedMatrix[i][n]+"\n");
+        fwr.close();
+        ob.close();
+        solve.consoleOutput.append("The solution is: (");
+        for(int i=0;i<n-1;i++)
+            solve.consoleOutput.append(solve.system.augmentedMatrix[i][n]+", ");
+        solve.consoleOutput.append(solve.system.augmentedMatrix[n-1][n]+")\n");
+        solve.consoleOutput.append("Saved to file "+output.getName());
+        System.out.println(solve.consoleOutput);
+    }
+ 
+    static class LinearEquation
+    {
+        Matrix system;
+        Row equations[];
+        StringBuilder consoleOutput;
+        public LinearEquation(int m)
+        {
+            system = new Matrix(m);
+            equations = new Row[m];
+            for(int i=0;i<m;i++)
+                equations[i] = new Row(m+1);
+            consoleOutput = new StringBuilder();
+        }
+ 
+        public void initializeMatrixAndRows(double coefficients[][],double constants[])
+        {
+            // Initializing Matrix and Rows
+            for(int i=0;i<system.m;i++)
+            {
+                for(int j=0;j<system.n-1;j++)
+                {
+                    system.augmentedMatrix[i][j] = coefficients[i][j];
+                    equations[i].row[j] = coefficients[i][j];
+                }
+                system.augmentedMatrix[i][system.n-1] = constants[i];
+                equations[i].row[system.n-1] = constants[i];
+            }
+        }
+ 
+        public void calculate()
+        {
+            consoleOutput.append("Start solving the equation.\n");
+            consoleOutput.append("Rows manipulation:\n");
+            for(int i=0;i<system.m;i++)
+            {
+                // Column Picked
+                // Divide the entire ith row with a[i][j]
+                double coeff=system.augmentedMatrix[i][i];
+                if(coeff!=1)
+                    consoleOutput.append((1/coeff) + " * " + "R" + (i + 1) + " -> " + "R" + (i + 1) + "\n");
+                for(int j=i;j<system.n;j++)
+                    system.augmentedMatrix[i][j]/=coeff;
+ 
+                for(int j=i+1;j<system.m;j++)
+                {
+                    // Take the number
+                    double num = system.augmentedMatrix[j][i];
+                    num *= -1;
+                    // Multiply this number with whole
+                    for(int k=i;k<system.n;k++)
+                        system.augmentedMatrix[j][k] += (num * system.augmentedMatrix[i][k]);
+                }
+            }
+            // Second making the upper ones to zeroes
+            for(int i=system.m-1;i>=0;i--)
+            {
+                // Column Picked from Bottom this time
+                // No Need to divide as already it is one
+                for(int j=i-1;j>=0;j--)
+                {
+                    // Take the num
+                    double num = system.augmentedMatrix[j][i];
+                    num *= -1;
+                    // multiply entire ith row by num and add to the current row
+                    for(int k=i;k<system.n;k++)
+                        system.augmentedMatrix[j][k] += (num*system.augmentedMatrix[i][k]);
+                    consoleOutput.append(num+" * "+"R"+(i+1)+" + "+"R"+(j+1)+" -> "+"R"+(j+1)+"\n");
+                }
+            }
+        }
+    }
+ 
+    static class Row
+    {
+        double row[];
+        int rowSize;
+        public Row(int n)
+        {
+            this.rowSize=n;
+            // creating row
+            row=new double[rowSize];
+        }
+    }
+ 
+    static class Matrix
+    {
+        double augmentedMatrix[][];
+        int m;
+        int n;
+        // initialization
+        public Matrix(int m)
+        {
+            this.m=m;
+            this.n=m+1;
+            // creating the initial matrix;
+            augmentedMatrix=new double[m][n];
+        }
+ 
+        public void displayAugmentedMatrix()
+        {
+            StringBuilder display=new StringBuilder();
+            display.append("Currently Augmented Matrix : ");
+            for(int i=0;i<m;i++)
+            {
+                for(int j=0;j<n-1;i++)
+                    display.append(augmentedMatrix[i][j]+" ");
+                display.append(" -  "+augmentedMatrix[i][n]+"\n");
+            }
+            System.out.println(display);
+        }
+    }
+}
