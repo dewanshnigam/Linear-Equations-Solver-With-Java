@@ -1,0 +1,436 @@
+package solver;
+ 
+import java.io.*;
+import java.util.*;
+public class Main{
+    public static int n;
+    public static int m;
+    public static int columnSwaps=0;
+    public static int rowSwaps=0;
+    public static Complex a[][];
+    public static Complex b[];
+    public static StringBuilder sb;
+ 
+    public static boolean rowAndColumnSwap(int index)
+    {
+        int zeroRows = 0;
+        boolean everSwapped = false;
+        int colIndex=-1;
+        for(int i=index+1;i<m;i++)
+        {
+            // Row wise.
+            int flag = 0;
+            for(int j=index+1;j<n;j++)
+            {
+                if(!a[i][j].isZero)
+                {
+                    // We can Swap
+                    everSwapped = true;
+                    flag=1;
+                    colIndex=j;
+                    for(int k=0;k<n;k++)
+                    {
+                        Complex temp = a[index][k];
+                        a[index][k] = a[i][k];
+                        a[i][k] = temp;
+                    }
+                    Complex temp = b[index];
+                    b[index] = b[i];
+                    b[i] = temp;
+                    sb.append("R"+(index+1)+" <-> "+"R"+(i+1)+"\n");
+                    break;
+                }
+            }
+            if(flag==1)
+            {
+                // Use colIndex to swap now column
+                for(int j=0;j<m;j++)
+                {
+                    Complex temp = a[j][index];
+                    a[j][index] = a[j][colIndex];
+                    a[j][colIndex] = temp;
+                    sb.append("C"+(index+1)+" <-> "+"C"+(colIndex+1)+"\n");
+                }
+                break;
+            }
+            else
+            {
+                zeroRows++;
+            }
+        }
+        return everSwapped;
+    }
+ 
+    public static void print()
+    {
+        System.out.println("\n Augmented Matrix is : \n");
+        for(int i=0;i<m;i++)
+            System.out.println(Arrays.toString(a[i])+" | "+b[i]);
+    }
+ 
+    public static int doFinalCheck()
+    {
+        // System.out.println(" ---------------> final check : "+index);
+        // print();
+        int countZeroRows=0;
+        for(int i=0;i<m;i++)
+        {
+            boolean isZeroRow = true;
+            for(int j=0;j<n;j++)
+            {
+                if(!a[i][j].isZero)
+                {
+                    isZeroRow = false;
+                    break;
+                }
+            }
+            if(isZeroRow)
+            {
+                if(!b[i].isZero)
+                    return -1;
+                countZeroRows++;
+            }
+        }
+        if((m-countZeroRows) < n)
+            return 0 ;
+        return 1;
+    }
+ 
+    public static int calculate()
+    {
+        // -1 for no solution
+        // 0 for infinite solutions
+        // 1 for unique solution
+        // print();
+        for(int i=0;i<n;i++)
+        {
+            // Pick each column
+            Complex coeff = a[i][i];
+            int done=0;
+            // Remember to change coefficient after swap
+            if(coeff.isZero)
+            {
+                int flag=0; // If swapping happens
+                // Search below
+                for(int j=i+1;j<m;j++)
+                {
+                    if(!a[j][i].isZero)
+                    {
+                        // We Can Swap
+                        flag = 1;
+                        for(int k=0;k<n;k++)
+                        {
+                            Complex temp = a[i][k];
+                            a[i][k] = a[j][k];
+                            a[j][k] = temp;
+                        }
+                        Complex temp = b[i];
+                        b[i] = b[j];
+                        b[j] = temp;
+                        sb.append("R"+(i+1)+" <-> "+"R"+(j+1)+"\n");
+                        break;
+                    }
+                }
+                // Did swapping happen ?
+                if(flag == 1)
+                {
+                    coeff = a[i][i];
+                    rowSwaps++ ;
+                }
+                else
+                {
+                    // Search right
+                    for(int j=i+1; j<n;j++)
+                    {
+                        if(!a[i][j].isZero)
+                        {
+                            // We can Swap
+                            flag=1;
+                            for(int k=0;k<m;k++)
+                            {
+                                Complex temp = a[k][i];
+                                a[k][i] = a[k][j];
+                                a[k][j] = temp;
+                            }
+                            sb.append("C"+(i+1)+" <-> "+"C"+(j+1)+"\n");
+                            break;
+                        }
+                    }
+                    // Did swap happen ?
+                    if(flag == 1)
+                    {
+                        coeff = a[i][i];
+                        columnSwaps++;
+                    }
+                    else
+                    {
+                        // It must be either an zero row of a no solution case
+                        if(!b[i].isZero)
+                        {
+                            // No solution case.
+                            // print();
+                            return -1;
+                        }
+                        else
+                        {
+                            // Swap row and column both
+                            // This will also confer about the infinite solutions
+                            if(!rowAndColumnSwap(i))
+                            {
+                                // Every thing below is zero
+                                // Algorithm is done
+                                done=1;
+                                break;
+                            }
+                            coeff = a[i][i];
+                        }
+                    }
+                }
+            }
+            if(done==1)
+                return doFinalCheck();
+            // print();
+            sb.append("R"+(i+1)+" / "+coeff.print()+" -> R"+(i+1)+"\n");
+            coeff.setConjugateAndNegate();
+            for(int k=i;k<n;k++)
+            {
+                // Division of complex numbers.
+                a[i][k] = a[i][k].divide(coeff);
+            }
+            b[i] = b[i].divide(coeff);
+ 
+            // Now Make Operations
+            for(int j=i+1;j<m;j++)
+            {
+                if(a[j][i].isZero)
+                    continue;
+                Complex num = a[j][i];
+                num.setConjugateAndNegate();
+                num = num.negate;
+                for(int k=i;k<n;k++)
+                    a[j][k] = a[j][k].add(a[i][k].multiply(num));
+                b[j] = b[j].add(b[i].multiply(num));
+                sb.append(num.print()+" * R"+(i+1)+" + R"+(j+1)+" -> R"+(j+1)+"\n");
+            }
+        }
+        // print();
+        // Second operation upper top;
+        for(int i=n-1;i>=0;i--)
+        {
+            for(int j=i-1;j>=0;j--)
+            {
+                if(a[j][i].isZero)
+                    continue;
+                Complex num = a[j][i];
+                num.setConjugateAndNegate();
+                num = num.negate;
+                for(int k=n-1;k>=i;k--)
+                    a[j][k] = a[j][k].add(a[i][k].multiply(num));
+                b[j] = b[j].add(b[i].multiply(num));
+                sb.append(num.print()+" * R"+(i+1)+" + R"+(j+1)+" -> R"+(j+1)+"\n");
+            }
+        }
+        // print();
+        return doFinalCheck();
+    }
+ 
+    public static Complex readInput(String str)
+    {
+        double real = 0.0D;
+        double complex = 0.0D;
+        if(!str.contains("i"))
+            real = Double.parseDouble(str);
+        else
+        {
+            int iIndex = str.indexOf("i");
+            int imagIndex = -1;
+            for(int k=iIndex-1;k>=0;k--)
+            {
+                char x = str.charAt(k);
+                if(!Character.isDigit(x))
+                {
+                    imagIndex = k+1;
+                    if(x=='-')
+                        complex = -1.0D;
+                    else
+                        complex = 1.0D;
+                    break;
+                }
+            }
+            if(imagIndex == -1)
+            {
+                imagIndex=0;
+            }
+            else
+            {
+                String valReal = str.substring(0,imagIndex-1);
+                if(!valReal.isEmpty())
+                    real = Double.parseDouble(valReal);
+            }
+            String valImag = str.substring(imagIndex,iIndex);
+            if(!valImag.isEmpty())
+            {
+                complex *= (Double.parseDouble(valImag));
+            }
+            else
+            {
+                if(complex != -1)
+                    complex = 1;
+            }
+        }
+        return new Complex(real,complex);
+    }
+    public static void main(String[] args)throws IOException{
+        File input=new File(args[1]);
+        File output=new File(args[3]);
+        FileWriter fwr= new FileWriter(output); //  Writer
+ 
+        Scanner ob=new Scanner(input); // Reader
+ 
+        n=ob.nextInt();
+        m=ob.nextInt();
+        int extended_m=m;
+        if(m<n)
+            extended_m=n;
+        a=new Complex[extended_m][n];
+        b=new Complex[extended_m];
+        for(int i=0;i<m;i++)
+        {
+            for(int j=0;j<n;j++)
+            {
+                a[i][j] = readInput(ob.next());
+                a[i][j].setConjugateAndNegate();
+            }
+            b[i] = readInput(ob.next());
+            b[i].setConjugateAndNegate();
+        }
+        for(int i=m;i<extended_m;i++)
+        {
+            Arrays.fill(a[i],new Complex(0,0));
+            b[i]=new Complex(0,0);
+        }
+        m=extended_m;
+        // Done up till now.
+        sb=new StringBuilder();
+        // Performing Gauss_Jordan Elimination Method.
+        // First making leading ones with zeroes downward for each diagonal
+        sb.append("Start solving the equation.\n");
+        sb.append("Rows manipulation:\n");
+        int value = calculate();
+        if(value==-1)
+        {
+            fwr.write("No solutions\n");
+            sb.append("No solutions\n");
+        }
+        else if(value == 0)
+        {
+            fwr.write("Infinitely many solutions\n");
+            sb.append("Infinitely many solutions\n");
+        }
+        else
+        {
+            for(int i=0;i<n;i++)
+                fwr.write(b[i].print()+"\n");
+            sb.append("The solution is: (");
+            for(int i=0;i<m-1;i++)
+                sb.append(b[i].print()+", ");
+            sb.append(b[m-1].print()+")\n");
+        }
+        sb.append("Saved to file "+output.getName());
+        System.out.println(sb);
+        fwr.close();
+        ob.close();
+ 
+    }
+    static class Complex
+    {
+        double real;
+        double complex;
+        boolean isZero;
+        Complex conjugate;
+        double magnitude;
+        Complex negate;
+        public Complex(double real,double complex)
+        {
+            this.real=real;
+            this.complex=complex;
+            if(real == 0 && complex == 0)
+                isZero = true;
+            else
+                isZero = false;
+            conjugate = null;
+            negate = null;
+            magnitude = (real*real) + (complex*complex);
+            magnitude = Math.sqrt(magnitude);
+        }
+ 
+        public void setConjugateAndNegate()
+        {
+            conjugate = new Complex(real,(-1*complex));
+            negate = new Complex((-1*real),(-1*complex));
+        }
+ 
+        public Complex add(Complex plus)
+        {
+            return new Complex((real + plus.real),(complex + plus.complex));
+        }
+ 
+        public Complex subtract(Complex minus)
+        {
+            return new Complex((real - minus.real),(complex - minus.complex));
+        }
+ 
+        public Complex multiply(Complex multiplicand)
+        {
+            // foil method
+            double f = real * multiplicand.real ;
+            double o = real * multiplicand.complex;
+            double i = complex * multiplicand.real;
+            double l = (complex * multiplicand.complex) * -1;
+            return new Complex((f+l),(i+o));
+        }
+ 
+        public Complex divide(Complex dividend)
+        {
+            // foil method
+            Complex num = multiply(dividend.conjugate);
+            double den = dividend.magnitude * dividend.magnitude;
+            double realPart = num.real/den;
+            double complexPart = num.complex/den;
+            return new Complex(realPart,complexPart);
+        }
+ 
+        public String print()
+        {
+            if(isZero)
+                return "0";
+            String s="";
+            if(complex == 0 && real != 0)
+                s = s+real;
+            else if(complex !=0 && real == 0)
+            {
+                if(complex == 1)
+                    s = s+"i";
+                else if(complex == -1)
+                    s = s+"-i";
+                else if(complex > 0)
+                    s = s+"+"+complex+"i";
+                else
+                    s = s+complex+"i";
+            }
+            else if(complex !=0 && real !=0)
+            {
+                s = s+real;
+                if(complex == 1)
+                    s = s+"i";
+                else if(complex == -1)
+                    s = s+"-i";
+                else if(complex > 0)
+                    s = s+"+"+complex+"i";
+                else
+                    s = s+complex+"i";
+            }
+            return s;
+        }
+    }
+}
