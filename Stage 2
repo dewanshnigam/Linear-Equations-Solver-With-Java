@@ -1,0 +1,25 @@
+package solver;
+import java.util.*;
+public class Main {
+    public static void main(String[] args) {
+        Scanner ob=new Scanner(System.in);
+        Equation e1=new Equation(ob.nextDouble(),ob.nextDouble(),ob.nextDouble());
+        Equation e2=new Equation(ob.nextDouble(),ob.nextDouble(),ob.nextDouble());        
+        // e2.a = d, e2.b = e, e2.c = f
+        double y = (e2.c - (e1.c * (e2.a / e1.a))) / (e2.b - (e1.b * (e2.a / e1.a)));
+        double x = (e1.c - (e1.b * y)) / e1.a;
+        System.out.println(x+" "+y);
+    }
+    static class Equation
+    {
+        double a;
+        double b;
+        double c;
+        public Equation(double a,double b,double c)
+        {
+            this.a=a;
+            this.b=b;
+            this.c=c;
+        }
+    }
+}
