@@ -1,0 +1,288 @@
+package solver;
+ 
+ 
+ 
+import java.io.*;
+import java.util.*;
+public class Main{
+    public static int n;
+    public static int m;
+    public static int columnSwaps=0;
+    public static int rowSwaps=0;
+    public static double a[][];
+    public static double b[];
+    public static StringBuilder sb;
+ 
+    public static boolean rowAndColumnSwap(int index)
+    {
+        int zeroRows = 0;
+        boolean everSwapped = false;
+        int colIndex=-1;
+        for(int i=index+1;i<m;i++)
+        {
+            // Row wise.
+            int flag = 0;
+            for(int j=index+1;j<n;j++)
+            {
+                if(a[i][j] !=0)
+                {
+                    // We can Swap
+                    everSwapped = true;
+                    flag=1;
+                    colIndex=j;
+                    for(int k=0;k<n;k++)
+                    {
+                        double temp = a[index][k];
+                        a[index][k] = a[i][k];
+                        a[i][k] = temp;
+                    }
+                    double temp = b[index];
+                    b[index] = b[i];
+                    b[i] = temp;
+                    sb.append("R"+(index+1)+" <-> "+"R"+(i+1)+"\n");
+                    break;
+                }
+            }
+            if(flag==1)
+            {
+                // Use colIndex to swap now column
+                for(int j=0;j<m;j++)
+                {
+                    double temp = a[j][index];
+                    a[j][index] = a[j][colIndex];
+                    a[j][colIndex] = temp;
+                    sb.append("C"+(index+1)+" <-> "+"C"+(colIndex+1)+"\n");
+                }
+                break;
+            }
+            else
+            {
+                zeroRows++;
+            }
+        }
+        return everSwapped;
+    }
+ 
+    public static void print()
+    {
+        System.out.println("\n Augmented Matrix is : \n");
+        for(int i=0;i<m;i++)
+            System.out.println(Arrays.toString(a[i])+" | "+b[i]);
+    }
+ 
+    public static int doFinalCheck()
+    {
+        // System.out.println(" ---------------> final check : "+index);
+        // print();
+        int countZeroRows=0;
+        for(int i=0;i<m;i++)
+        {
+            boolean isZeroRow = true;
+            for(int j=0;j<n;j++)
+            {
+                if(a[i][j]!=0)
+                {
+                    isZeroRow = false;
+                    break;
+                }
+            }
+            if(isZeroRow)
+            {
+                if(b[i] != 0)
+                    return -1;
+                countZeroRows++;
+            }
+        }
+        if((m-countZeroRows) < n)
+            return 0 ;
+        return 1;
+    }
+ 
+    public static int calculate()
+    {
+        // -1 for no solution
+        // 0 for infinite solutions
+        // 1 for unique solution
+        // print();
+        for(int i=0;i<n;i++)
+        {
+            // Pick each column
+            double coeff = a[i][i];
+            int done=0;
+            // Remember to change coefficient after swap
+            if(coeff == 0)
+            {
+                int flag=0; // If swapping happens
+                // Search below
+                for(int j=i+1;j<m;j++)
+                {
+                    if(a[j][i] != 0)
+                    {
+                        // We Can Swap
+                        flag = 1;
+                        for(int k=0;k<n;k++)
+                        {
+                            double temp = a[i][k];
+                            a[i][k] = a[j][k];
+                            a[j][k] = temp;
+                        }
+                        double temp = b[i];
+                        b[i] = b[j];
+                        b[j] = temp;
+                        sb.append("R"+(i+1)+" <-> "+"R"+(j+1)+"\n");
+                        break;
+                    }
+                }
+                // Did swapping happen ?
+                if(flag == 1)
+                {
+                    coeff = a[i][i];
+                    rowSwaps++ ;
+                }
+                else
+                {
+                    // Search right
+                    for(int j=i+1; j<n;j++)
+                    {
+                        if(a[i][j] != 0)
+                        {
+                            // We can Swap
+                            flag=1;
+                            for(int k=0;k<m;k++)
+                            {
+                                double temp = a[k][i];
+                                a[k][i] = a[k][j];
+                                a[k][j] = temp;
+                            }
+                            sb.append("C"+(i+1)+" <-> "+"C"+(j+1)+"\n");
+                            break;
+                        }
+                    }
+                    // Did swap happen ?
+                    if(flag == 1)
+                    {
+                        coeff = a[i][i];
+                        columnSwaps++;
+                    }
+                    else
+                    {
+                        // It must be either an zero row of a no solution case
+                        if(b[i] != 0)
+                        {
+                            // No solution case.
+                            // print();
+                            return -1;
+                        }
+                        else
+                        {
+                            // Swap row and column both
+                            // This will also confer about the infinite solutions
+                            if(!rowAndColumnSwap(i))
+                            {
+                                // Every thing below is zero
+                                // Algorithm is done
+                                done=1;
+                                break;
+                            }
+                            coeff = a[i][i];
+                        }
+                    }
+                }
+            }
+            if(done==1)
+                return doFinalCheck();
+            // print();
+            sb.append((1/coeff)+" * R"+(i+1)+" -> R"+(i+1)+"\n");
+            for(int k=i;k<n;k++)
+                a[i][k]/=coeff;
+            b[i]/=coeff;
+ 
+            // Now Make Operations
+            for(int j=i+1;j<m;j++)
+            {
+                if(a[j][i]==0)
+                    continue;
+                double num = a[j][i];
+                num *= -1;
+                for(int k=i;k<n;k++)
+                    a[j][k] += (num*a[i][k]);
+                b[j] += (num*b[i]);
+                sb.append((num)+" * R"+(i+1)+" + R"+(j+1)+" -> R"+(j+1)+"\n");
+            }
+        }
+        // print();
+        // Second operation upper top;
+        for(int i=n-1;i>=0;i--)
+        {
+            for(int j=i-1;j>=0;j--)
+            {
+                if(a[j][i] == 0)
+                    continue;
+                double num = a[j][i];
+                num *= -1;
+                for(int k=n-1;k>=i;k--)
+                    a[j][k] += (num*a[i][k]);
+                b[j] += (num*b[i]);
+                sb.append((num)+" * R"+(i+1)+" + R"+(j+1)+" -> R"+(j+1)+"\n");
+            }
+        }
+        // print();
+        return doFinalCheck();
+    }
+ 
+    public static void main(String[] args)throws IOException{
+        File input=new File(args[1]);
+        File output=new File(args[3]);
+        FileWriter fwr= new FileWriter(output); //  Writer
+        Scanner ob=new Scanner(input); // Reader
+        n=ob.nextInt(); // Variables
+        m=ob.nextInt(); // Equations
+        int extended_m=m;
+        if(m<n)
+            extended_m=n;
+        a=new double[extended_m][n];
+        b=new double[extended_m];
+        for(int i=0;i<m;i++)
+        {
+            for(int j=0;j<n;j++)
+                a[i][j]=ob.nextDouble();
+            b[i]=ob.nextDouble();
+        }
+        for(int i=m;i<extended_m;i++)
+        {
+            Arrays.fill(a[i],0);
+            b[i]=0;
+        }
+        m=extended_m;
+        // Done up till now.
+        sb=new StringBuilder();
+        // Performing Gauss_Jordan Elimination Method.
+        // First making leading ones with zeroes downward for each diagonal
+        sb.append("Start solving the equation.\n");
+        sb.append("Rows manipulation:\n");
+        int value = calculate();
+        if(value==-1)
+        {
+            fwr.write("No solutions\n");
+            sb.append("No solutions\n");
+        }
+        else if(value == 0)
+        {
+            fwr.write("Infinitely many solutions\n");
+            sb.append("Infinitely many solutions\n");
+        }
+        else
+        {
+            for(int i=0;i<n;i++)
+                fwr.write(b[i]+"\n");
+            sb.append("The solution is: (");
+            for(int i=0;i<m-1;i++)
+                sb.append(b[i]+", ");
+            sb.append(b[m-1]+")\n");
+        }
+        sb.append("Saved to file "+output.getName());
+        System.out.println(sb);
+        fwr.close();
+        ob.close();
+    }
+}
